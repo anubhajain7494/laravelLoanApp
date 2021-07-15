@@ -19,10 +19,21 @@ class UsersTableSeeder extends Seeder
         // will be too slow.
         $password = Hash::make('toptal');
 
-        User::create([
+        $users = [[
             'name' => 'admin',
             'email' => 'admin@test.com',
-            'password' => $password
-        ]);
+            'password' => $password,
+            'api_token' => str_random(60)
+        ],
+        [
+            'name' => 'anubha',
+            'email' => 'anubha@test.com',
+            'password' => $password,
+            'api_token' => str_random(60)
+        ]];
+        
+        foreach($users as $user){
+            User::create($user);
+        }
     }
 }

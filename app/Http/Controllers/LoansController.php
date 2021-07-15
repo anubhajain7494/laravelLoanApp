@@ -8,6 +8,17 @@ use App\Loans;
 
 class LoansController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $this->middleware(function ($request, $next) {
+            $this->id = Auth::user()->id;
+            dd($this->id);
+
+            return $next($request);
+        });
+    }
+
     public function index()
     {
         return Loans::all();
@@ -20,23 +31,47 @@ class LoansController extends Controller
 
     public function store(Request $request)
     {
-    	$loan = Loans::create($request->all());
+        $data = $request->all();
+
+        $validator = Validator::make($data, [
+            'user_id' => 'required',
+            'amount_required' => 'required',
+            'loan_term' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response(['error' => $validator->errors(), 'Validation Error']);
+        }
+        
+    	$loan = Loans::create($data);
 
         return response()->json($loan, 201);
     }
 
-    public function update(Request $request, $id)
+    public function repay(Request $request)
     {
-        $article = Article::findOrFail($id);
-        $article->update($request->all());
+        $data = $request->all();
+        $validator = Validator::make($data, [
+            'user_id' => 'required',
+            'amount_required' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response(['error' => $validator->errors(), 'Validation Error']);
+        }
+
+        $loan = DB::table('loans')->where('user_id', $data['user_id'])->first();
+        $amount_left = $loan->amount_required - $data['amount_required']
+        $loan->update(['amount_required' => $amount_left]);
 
         return response()->json($loan, 200);
     }
 
     public function delete(Loans $loan)
     {
-        $loan->delete();
-
-        return response()->json(null, 204);
+        if ($loan->delete()) {
+            return response()->json(['message' => 'Record deleted successfully!'], 204);
+        }
+        return response()->json(['errors' => 'Something went Wrong! Record could not be deleted']);
     }
 }

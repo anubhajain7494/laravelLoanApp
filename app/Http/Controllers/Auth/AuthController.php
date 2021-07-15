@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
 use Illuminate\Foundation\Auth\AuthenticatesAndRegistersUsers;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
@@ -56,35 +58,45 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Create a new user instance after a valid registration.
-     *
-     * @param  array  $data
-     * @return User
-     */
-    protected function create(array $data)
+    public function register(Request $request)
     {
-        return User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => bcrypt($data['password']),
+        $data = $request->all();
+
+        $validator = Validator::make($data, [
+            'name' => 'required|max:55',
+            'email' => 'email|required|unique:users',
+            'password' => 'required'
         ]);
+
+        if ($validator->fails()) {
+            return response(['error' => $validator->errors(), 'Validation Error']);
+        }
+
+        $data['password'] = Hash::make($request->password);
+
+        $user = User::create($data);
+        $accessToken = $user->generateToken();
+
+        return response(['user' => $user, 'access_token' => $accessToken], 201);
     }
 
     public function login(Request $request)
     {
-        $this->validateLogin($request);
+        $data = $request->all();
+        $validator = Validator::make($data, [
+            'email' => 'required',
+            'password' => 'required'
+        ]);
 
-        if ($this->attemptLogin($request)) {
-            $user = $this->guard()->user();
-            $user->generateToken();
-
-            return response()->json([
-                'data' => $user->toArray(),
-            ]);
+        if ($validator->fails()) {
+            return response(['error' => 'This User does not exist, check your details', 'status' => false]);
         }
 
-        return $this->sendFailedLoginResponse($request);
+        $user = Auth::guard($this->getGuard())->user();
+
+        return response()->json([
+            'access_token' => $user->api_token
+        ]);
     }
 
     public function logout(Request $request)

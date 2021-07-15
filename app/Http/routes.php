@@ -13,16 +13,17 @@
 use App\Loans;
 use Illuminate\Http\Request;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::post('register', 'Auth\AuthController@register');
 Route::post('login', 'Auth\AuthController@login');
 Route::post('logout', 'Auth\AuthController@logout');
 
-Route::group(['middleware' => 'auth:api'], function() {
+/*Route::group(['middleware' => 'auth:api'], function() {*/
 	Route::get('loans', 'LoansController@index');
 	Route::get('loans/{loan}', 'LoansController@show');
 	Route::post('loans', 'LoansController@store');
-	Route::put('loans/{loan}', 'LoansController@update');
+	Route::put('repay', 'LoansController@repay');
 	Route::delete('loans/{loan}', 'LoansController@delete');
-});
+	Route::get('user', function (Request $request) {
+	    return $request->user();
+	});
+//});
